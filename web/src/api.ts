@@ -10,11 +10,18 @@ type RequestBody = {
   }
 }
 
+// Configuration for API endpoint
+const USE_LOCAL_API = process.env.NEXT_PUBLIC_USE_LOCAL_API === 'true'
+const PRODUCTION_API_URL = 'https://c1y17h6s33.execute-api.us-east-1.amazonaws.com/production/run'
+const LOCAL_API_URL = '/api/run'
+
+const API_ENDPOINT = USE_LOCAL_API ? LOCAL_API_URL : PRODUCTION_API_URL
+
 export const runFunction = async (
   requestBody: RequestBody
 ): Promise<Either<string, TreeViewerData>> => {
   try {
-    const response = await fetch('https://c1y17h6s33.execute-api.us-east-1.amazonaws.com/production/run', {
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,6 +29,7 @@ export const runFunction = async (
       mode: 'cors',
       body: safeStringify(requestBody),
     })
+    
     const responseBody = await response.text()
 
     if (response.ok) {

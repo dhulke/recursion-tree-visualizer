@@ -9,6 +9,7 @@
   },
   "packageManager": "yarn@1.22.22",
   "scripts": {
+    "local": "../scripts/start-local.sh",
     "dev": "next dev --port 3003",
     "build": "next build",
     "start": "next start",

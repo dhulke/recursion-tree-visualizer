@@ -11,6 +11,7 @@
   "scripts": {
     "build": "npx tsc",
     "local": "docker build --platform linux/arm64 -t rtv . && docker run --rm -p 8080:8080 rtv",
+    "locald": "docker build --platform linux/arm64 -t rtv . && docker run --rm -p ${PORT:-8080}:8080 -d rtv",
     "test": "DEBUG='app:*,test:*' npx jest --config jest.config.js",
     "test:cov": "npx jest --config jest.config.js --coverage",
     "typesync": "npx typesync"

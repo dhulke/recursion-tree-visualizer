@@ -17,33 +17,139 @@ Stop drawing recursion trees by hand. Watch the [demo video](https://youtu.be/1f
 
 ## Local development
 
-### Web
+### Prerequisites
 
-In the `web` directory, run:
+- [Node.js](https://nodejs.org/) (20.x for web, 14.x for lambda)
+- [Docker](https://www.docker.com/) for running the Lambda function
+- [Yarn](https://yarnpkg.com/) (recommended) or npm
+
+### Quick Start (Recommended)
+
+The easiest way to run the full project locally is using the provided script:
 
 ```bash
-# to install all dependencies
-$ npm install
+# Clone the repository
+$ git clone <repository-url>
+$ cd recursion-tree-visualizer
 
-# to run the app on http://localhost:3003
-$ npm run start
+# Install web dependencies
+$ cd web && yarn install && cd ..
+
+# Install lambda dependencies  
+$ cd lambda && npm install && cd ..
+
+# Start both services (Lambda + Next.js)
+$ cd web && yarn local
 ```
 
-### Lambda
+This will:
+- Build and run the Lambda function on port 8080 using Docker
+- Start the Next.js development server on port 3003
+- Automatically configure the web app to use the local Lambda
+- Clean up Docker containers when you press Ctrl+C
 
-You can use the Amazon Runtime Interface Emulator (RIE), already contained in the docker image, to test the Lambda function.
+**Access the app at:** http://localhost:3003
 
-In the `lambda` directory, run:
+### Custom Ports
+
+You can specify custom ports for both services:
 
 ```bash
-# build your local image
-$ docker build --tag rtv .
+# Lambda on 8081, Web on 3004
+$ cd web && yarn local -- 8081 3004
 
-# create and run a container using AWS RIE as executable to emulate a server for your lambda function
-$ docker run --rm -p 8080:8080 rtv
+# Or using environment variables
+$ cd web && LAMBDA_PORT=8081 WEB_PORT=3004 yarn local
+```
 
-# make a http request to your function, passing event with the -d in body field (escaped json), see examples in requests.http file
-$ curl -XPOST "http://localhost:8080/2015-03-31/functions/function/invocations" -d '{"body":"{}"}'
+### Manual Setup (Advanced)
+
+If you prefer to run services separately:
+
+#### 1. Lambda Function
+
+```bash
+$ cd lambda
+
+# Install dependencies
+$ npm install
+
+# Build and run with Docker (detached)
+$ npm run locald
+
+# Or with custom port
+$ PORT=8081 npm run locald
+
+# Test the function
+$ curl -XPOST "http://localhost:8080/2015-03-31/functions/function/invocations" \
+  -d '{"body":"{\"lang\":\"javascript\",\"functionData\":{\"body\":\"function fibonacci(n) { return n <= 1 ? n : fibonacci(n-1) + fibonacci(n-2); }\",\"params\":[{\"name\":\"n\",\"initialValue\":\"5\"}]},\"options\":{\"memoize\":false}}"}'
+```
+
+#### 2. Web Application
+
+```bash
+$ cd web
+
+# Install dependencies
+$ yarn install
+
+# For local development (uses local Lambda)
+$ NEXT_PUBLIC_USE_LOCAL_API=true yarn dev
+
+# For production mode (uses AWS API)
+$ yarn dev
+```
+
+### Environment Configuration
+
+The web application can run in two modes:
+
+#### Local Development Mode
+- Set `NEXT_PUBLIC_USE_LOCAL_API=true`
+- Uses local Lambda function via `/api/run` proxy
+- Avoids CORS issues
+
+#### Production Mode (Default)
+- Uses AWS Lambda endpoint: `https://c1y17h6s33.execute-api.us-east-1.amazonaws.com/production/run`
+- No local setup required
+
+### Environment Variables
+
+Create `web/.env.local` for custom configuration:
+
+```env
+# Use local Lambda instead of AWS
+NEXT_PUBLIC_USE_LOCAL_API=true
+
+# Local Lambda port (for API proxy)
+LAMBDA_PORT=8080
+```
+
+### Troubleshooting
+
+#### Docker Issues
+```bash
+# Stop any running containers
+$ docker stop $(docker ps -q --filter ancestor=rtv)
+
+# Remove old images
+$ docker rmi rtv
+```
+
+#### Port Conflicts
+```bash
+# Check what's using a port
+$ lsof -i :8080
+
+# Use different ports
+$ cd web && yarn local -- 8081 3004
+```
+
+#### Clean Restart
+```bash
+# Stop all services, clean Docker, and restart
+$ docker stop $(docker ps -q --filter ancestor=rtv)
+$ cd web && yarn local
 ```
 
 ## Deploy to production
